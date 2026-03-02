@@ -40,6 +40,8 @@ android {
 dependencies {
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
+    implementation(libs.androidx.lifecycle.viewmodel.ktx)
+    implementation(libs.androidx.lifecycle.viewmodel.compose)
     implementation(libs.androidx.activity.compose)
     // Navigation for StudySync screens (Dashboard, Courses, Tasks, Sessions)
     implementation("androidx.navigation:navigation-compose:2.8.0")
