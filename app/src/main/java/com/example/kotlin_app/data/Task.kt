@@ -17,7 +17,7 @@ import java.time.LocalDate
         )
     ],
     indices = [Index(value = ["courseId"])]
-+)
+)
 data class Task(
     @PrimaryKey(autoGenerate = true) val id: Long = 0L,
     val courseId: Long,
