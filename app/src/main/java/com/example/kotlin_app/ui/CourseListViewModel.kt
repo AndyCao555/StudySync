@@ -27,6 +27,17 @@ class CourseListViewModel(
         observeCourses()
     }
 
+    fun addCourse(name: String, colorHex: String) {
+        if (name.isBlank()) return
+        viewModelScope.launch {
+            val course = Course(
+                name = name.trim(),
+                colorHex = colorHex.ifBlank { "#2196F3" }
+            )
+            repository.upsertCourse(course)
+        }
+    }
+
     private fun observeCourses() {
         viewModelScope.launch {
             repository.getAllCourses().collectLatest { courses ->

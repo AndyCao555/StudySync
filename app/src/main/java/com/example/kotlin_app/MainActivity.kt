@@ -18,11 +18,14 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -175,6 +178,9 @@ fun CourseListScreen(
 
     val uiState by viewModel.uiState.collectAsState()
 
+    val (newCourseName, setNewCourseName) = remember { mutableStateOf("") }
+    val (newCourseColor, setNewCourseColor) = remember { mutableStateOf("#2196F3") }
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -184,6 +190,32 @@ fun CourseListScreen(
             text = "Courses",
             style = MaterialTheme.typography.headlineSmall
         )
+        Spacer(modifier = Modifier.height(16.dp))
+
+        OutlinedTextField(
+            value = newCourseName,
+            onValueChange = setNewCourseName,
+            label = { Text("Course name") },
+            modifier = Modifier.fillMaxWidth()
+        )
+        Spacer(modifier = Modifier.height(8.dp))
+        OutlinedTextField(
+            value = newCourseColor,
+            onValueChange = setNewCourseColor,
+            label = { Text("Color (hex)") },
+            modifier = Modifier.fillMaxWidth()
+        )
+        Spacer(modifier = Modifier.height(8.dp))
+        Button(
+            onClick = {
+                viewModel.addCourse(newCourseName, newCourseColor)
+                setNewCourseName("")
+            },
+            modifier = Modifier.fillMaxWidth(),
+            enabled = newCourseName.isNotBlank()
+        ) {
+            Text("Add Course")
+        }
         Spacer(modifier = Modifier.height(16.dp))
 
         if (uiState.courses.isEmpty()) {
