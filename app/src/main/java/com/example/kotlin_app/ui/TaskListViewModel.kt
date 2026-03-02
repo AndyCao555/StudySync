@@ -8,7 +8,9 @@ import com.example.kotlin_app.data.TaskRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
 
 enum class TaskFilter {
@@ -25,23 +27,45 @@ class TaskListViewModel(
     private val repository: TaskRepository
 ) : ViewModel() {
 
-    private val _uiState = MutableStateFlow(TaskListUiState())
-    val uiState: StateFlow<TaskListUiState> = _uiState.asStateFlow()
+    private val _filter = MutableStateFlow(TaskFilter.ALL)
+    
+    // Convert Flow to StateFlow immediately for instant updates
+    val tasks: StateFlow<List<Task>> = repository.getTasksForCourse(courseId)
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = emptyList()
+        )
 
-    init {
-        observeTasks()
+    val uiState: StateFlow<TaskListUiState> = kotlinx.coroutines.flow.combine(
+        tasks,
+        _filter
+    ) { taskList, filter ->
+        TaskListUiState(tasks = taskList, filter = filter)
+    }.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5000),
+        initialValue = TaskListUiState()
+    )
+
+    fun setFilter(filter: TaskFilter) {
+        _filter.value = filter
     }
 
-    private fun observeTasks() {
+    fun toggleTaskCompletion(task: Task) {
         viewModelScope.launch {
-            repository.getTasksForCourse(courseId).collectLatest { tasks ->
-                _uiState.value = _uiState.value.copy(tasks = tasks)
-            }
+            val updatedTask = task.copy(
+                id = task.id, // Ensure ID is preserved
+                isCompleted = !task.isCompleted
+            )
+            repository.upsertTask(updatedTask)
         }
     }
 
-    fun setFilter(filter: TaskFilter) {
-        _uiState.value = _uiState.value.copy(filter = filter)
+    fun deleteTask(task: Task) {
+        viewModelScope.launch {
+            repository.deleteTask(task)
+        }
     }
 }
 
