@@ -1,6 +1,6 @@
 plugins {
     alias(libs.plugins.android.application)
-    // Rely on built-in Kotlin; no explicit kotlin-android plugin.
+    alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.ksp)
 }
