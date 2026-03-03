@@ -55,6 +55,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.kotlin_app.data.Course
 import com.example.kotlin_app.data.CourseRepository
 import com.example.kotlin_app.data.StudySyncDatabase
+import com.example.kotlin_app.data.SupabaseSyncService
 import com.example.kotlin_app.data.Task
 import com.example.kotlin_app.data.TaskRepository
 import java.time.format.DateTimeFormatter
@@ -108,7 +109,8 @@ fun StudySyncApp() {
                 val courseId = backStackEntry.arguments?.getString("courseId") ?: "unknown"
                 val context = LocalContext.current
                 val database = StudySyncDatabase.getInstance(context)
-                val taskRepository = TaskRepository(database.taskDao())
+                val supabaseSync = SupabaseSyncService()
+                val taskRepository = TaskRepository(database.taskDao(), supabaseSync)
                 val courseIdLong = courseId.toLongOrNull() ?: 0L
                 
                 TaskListScreen(
@@ -201,7 +203,8 @@ fun CourseListScreen(
 
     // Simple manual wiring of the database, repository, and ViewModel.
     val database = StudySyncDatabase.getInstance(context)
-    val repository = CourseRepository(database.courseDao())
+    val supabaseSync = SupabaseSyncService()
+    val repository = CourseRepository(database.courseDao(), supabaseSync)
 
     val viewModel: CourseListViewModel = viewModel(
         factory = CourseListViewModelFactory(repository)
@@ -504,7 +507,8 @@ fun TaskEditScreen(
 ) {
     val context = LocalContext.current
     val database = StudySyncDatabase.getInstance(context)
-    val taskRepository = TaskRepository(database.taskDao())
+    val supabaseSync = SupabaseSyncService()
+    val taskRepository = TaskRepository(database.taskDao(), supabaseSync)
     val coroutineScope = rememberCoroutineScope()
 
     var title by remember { mutableStateOf("") }
