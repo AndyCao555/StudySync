@@ -197,13 +197,14 @@ private fun StatCard(
 @Composable
 private fun UpcomingTaskCard(task: Task, courseName: String) {
     val priorityLabel = when (task.priority) {
-        3 -> "High"
-        2 -> "Medium"
+        5 -> "Urgent"
+        4 -> "High"
+        3 -> "Medium"
         else -> "Low"
     }
     val priorityColor = when (task.priority) {
-        3 -> MaterialTheme.colorScheme.error
-        2 -> MaterialTheme.colorScheme.tertiary
+        5, 4 -> MaterialTheme.colorScheme.error
+        3 -> MaterialTheme.colorScheme.tertiary
         else -> MaterialTheme.colorScheme.onSurfaceVariant
     }
 
@@ -232,7 +233,9 @@ private fun UpcomingTaskCard(task: Task, courseName: String) {
             }
             Column(horizontalAlignment = androidx.compose.ui.Alignment.End) {
                 Text(
-                    text = task.dueDate?.toString() ?: "",
+                    text = task.dueDate?.let {
+                        "${it.dayOfMonth.toString().padStart(2, '0')}-${it.monthValue.toString().padStart(2, '0')}-${it.year}"
+                    } ?: "",
                     style = MaterialTheme.typography.bodySmall
                 )
                 Spacer(modifier = Modifier.height(2.dp))

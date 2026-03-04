@@ -45,6 +45,9 @@ import com.example.kotlin_app.data.StudySyncDatabase
 import com.example.kotlin_app.ui.StudySessionsViewModel
 import com.example.kotlin_app.ui.StudySessionsViewModelFactory
 import java.time.LocalDate
+import java.time.format.DateTimeFormatter
+
+private val DATE_FORMATTER = DateTimeFormatter.ofPattern("dd-MM-yyyy")
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -182,7 +185,7 @@ private fun SessionCard(
                 )
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
-                    text = session.date.toString(),
+                    text = session.date.format(DATE_FORMATTER),
                     style = MaterialTheme.typography.bodySmall
                 )
                 val hours = session.durationMinutes / 60
@@ -212,7 +215,7 @@ private fun AddSessionDialog(
     onConfirm: (courseId: Long, date: LocalDate, durationMinutes: Int) -> Unit
 ) {
     var selectedCourse by remember { mutableStateOf(courses.firstOrNull()) }
-    var dateText by remember { mutableStateOf(LocalDate.now().toString()) }
+    var dateText by remember { mutableStateOf(LocalDate.now().format(DATE_FORMATTER)) }
     var durationText by remember { mutableStateOf("") }
     var dateError by remember { mutableStateOf(false) }
     var durationError by remember { mutableStateOf(false) }
@@ -261,10 +264,10 @@ private fun AddSessionDialog(
                         dateText = it
                         dateError = false
                     },
-                    label = { Text("Date (YYYY-MM-DD)") },
+                    label = { Text("Date (DD-MM-YYYY)") },
                     isError = dateError,
                     supportingText = if (dateError) {
-                        { Text("Enter a valid date, e.g. 2025-03-15") }
+                        { Text("Enter a valid date, e.g. 15-03-2025") }
                     } else null,
                     modifier = Modifier.fillMaxWidth()
                 )
@@ -288,7 +291,7 @@ private fun AddSessionDialog(
         confirmButton = {
             Button(
                 onClick = {
-                    val date = try { LocalDate.parse(dateText) } catch (e: Exception) { null }
+                    val date = try { LocalDate.parse(dateText, DATE_FORMATTER) } catch (e: Exception) { null }
                     val duration = durationText.toIntOrNull()?.takeIf { it > 0 }
                     dateError = date == null
                     durationError = duration == null
