@@ -8,8 +8,14 @@ class StudySessionRepository(
     private val supabaseSync: SupabaseSyncService? = null
 ) {
 
+    fun getAllSessions(): Flow<List<StudySession>> =
+        studySessionDao.getAllSessions()
+
     fun getSessionsForCourse(courseId: Long): Flow<List<StudySession>> =
         studySessionDao.getSessionsForCourse(courseId)
+
+    fun getTotalMinutes(): Flow<Int?> =
+        studySessionDao.getTotalMinutes()
 
     fun getTotalMinutesForCourse(courseId: Long): Flow<Int?> =
         studySessionDao.getTotalMinutesForCourse(courseId)

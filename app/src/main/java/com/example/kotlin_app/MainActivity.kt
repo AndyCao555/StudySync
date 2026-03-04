@@ -657,25 +657,3 @@ fun TaskEditScreen(
     }
 }
 
-/**
- * Placeholder for the study sessions screen.
- * Will later show scheduled sessions and total study time.
- */
-@Composable
-fun StudySessionsScreen(
-    onBack: () -> Unit
-) {
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(16.dp),
-        verticalArrangement = Arrangement.Center,
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        Text(text = "Study Sessions")
-        Spacer(modifier = Modifier.height(16.dp))
-        Button(onClick = onBack) {
-            Text(text = "Back")
-        }
-    }
-}
