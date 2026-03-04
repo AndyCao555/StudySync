@@ -163,33 +163,6 @@ fun StudySyncAppPreview() {
     }
 }
 
-/**
- * Simple placeholder for the dashboard screen.
- * This will later show stats like pending tasks and study hours.
- */
-@Composable
-fun DashboardScreen(
-    onNavigateToCourses: () -> Unit,
-    onNavigateToSessions: () -> Unit
-) {
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(16.dp),
-        verticalArrangement = Arrangement.Center,
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        Text(text = "StudySync Dashboard")
-        Spacer(modifier = Modifier.height(16.dp))
-        Button(onClick = onNavigateToCourses) {
-            Text(text = "Go to Courses")
-        }
-        Spacer(modifier = Modifier.height(8.dp))
-        Button(onClick = onNavigateToSessions) {
-            Text(text = "Go to Study Sessions")
-        }
-    }
-}
 
 /**
  * Course list screen backed by Room + ViewModel.

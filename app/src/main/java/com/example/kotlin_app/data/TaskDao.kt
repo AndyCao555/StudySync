@@ -11,6 +11,12 @@ import kotlinx.coroutines.flow.Flow
 @Dao
 interface TaskDao {
 
+    @Query("SELECT * FROM tasks ORDER BY dueDate IS NULL, dueDate ASC")
+    fun getAllTasks(): Flow<List<Task>>
+
+    @Query("SELECT * FROM tasks WHERE isCompleted = 0 AND dueDate IS NOT NULL ORDER BY dueDate ASC LIMIT 5")
+    fun getUpcomingTasks(): Flow<List<Task>>
+
     @Query("SELECT * FROM tasks WHERE courseId = :courseId ORDER BY dueDate IS NULL, dueDate ASC")
     fun getTasksForCourse(courseId: Long): Flow<List<Task>>
 

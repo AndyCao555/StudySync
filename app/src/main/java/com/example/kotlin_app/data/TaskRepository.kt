@@ -8,6 +8,12 @@ class TaskRepository(
     private val supabaseSync: SupabaseSyncService? = null
 ) {
 
+    fun getAllTasks(): Flow<List<Task>> =
+        taskDao.getAllTasks()
+
+    fun getUpcomingTasks(): Flow<List<Task>> =
+        taskDao.getUpcomingTasks()
+
     fun getTasksForCourse(courseId: Long): Flow<List<Task>> =
         taskDao.getTasksForCourse(courseId)
 
