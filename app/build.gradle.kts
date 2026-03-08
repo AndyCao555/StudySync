@@ -108,6 +108,9 @@ dependencies {
     implementation(libs.androidx.room.ktx)
     ksp(libs.androidx.room.compiler)
     
+    // WorkManager for background sync
+    implementation(libs.androidx.work.runtime.ktx)
+    
     // Supabase
     implementation(platform(libs.supabase.bom))
     implementation(libs.supabase.postgrest)

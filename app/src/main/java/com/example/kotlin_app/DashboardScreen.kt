@@ -39,11 +39,12 @@ fun DashboardScreen(
 ) {
     val context = LocalContext.current
     val database = StudySyncDatabase.getInstance(context)
+    val supabaseSync = com.example.kotlin_app.data.SupabaseSyncService()
     val viewModel: DashboardViewModel = viewModel(
         factory = DashboardViewModelFactory(
-            courseRepository = CourseRepository(database.courseDao()),
-            taskRepository = TaskRepository(database.taskDao()),
-            sessionRepository = StudySessionRepository(database.studySessionDao())
+            courseRepository = CourseRepository(database.courseDao(), supabaseSync),
+            taskRepository = TaskRepository(database.taskDao(), supabaseSync),
+            sessionRepository = StudySessionRepository(database.studySessionDao(), supabaseSync)
         )
     )
     val uiState by viewModel.uiState.collectAsState()

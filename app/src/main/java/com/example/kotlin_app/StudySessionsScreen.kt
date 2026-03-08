@@ -54,10 +54,11 @@ private val DATE_FORMATTER = DateTimeFormatter.ofPattern("dd-MM-yyyy")
 fun StudySessionsScreen(onBack: () -> Unit) {
     val context = LocalContext.current
     val database = StudySyncDatabase.getInstance(context)
+    val supabaseSync = com.example.kotlin_app.data.SupabaseSyncService()
     val viewModel: StudySessionsViewModel = viewModel(
         factory = StudySessionsViewModelFactory(
-            sessionRepository = StudySessionRepository(database.studySessionDao()),
-            courseRepository = CourseRepository(database.courseDao())
+            sessionRepository = StudySessionRepository(database.studySessionDao(), supabaseSync),
+            courseRepository = CourseRepository(database.courseDao(), supabaseSync)
         )
     )
     val uiState by viewModel.uiState.collectAsState()
