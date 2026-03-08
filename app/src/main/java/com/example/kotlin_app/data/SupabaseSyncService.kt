@@ -172,20 +172,46 @@ class SupabaseSyncService {
     // ========== Study Sessions ==========
     
     suspend fun syncStudySessionToSupabase(session: StudySession) {
-        val client = this.client ?: return
-        val supabaseSession = SupabaseStudySession(
-            id = session.id,
-            course_id = session.courseId,
-            date = session.date.toString(),
-            duration_minutes = session.durationMinutes
-        )
+        val client = this.client ?: run {
+            android.util.Log.w("SupabaseSyncService", "Supabase client is null - sync skipped for session: ${session.id}")
+            return
+        }
         
-        if (session.id == 0L) {
-            client.from("studysync_study_sessions").insert(supabaseSession)
-        } else {
-            client.from("studysync_study_sessions").update(supabaseSession) {
-                filter { eq("id", session.id) }
+        try {
+            val supabaseSession = SupabaseStudySession(
+                id = session.id,
+                course_id = session.courseId,
+                date = session.date.toString(),
+                duration_minutes = session.durationMinutes
+            )
+            
+            android.util.Log.d("SupabaseSyncService", "Syncing study session: id=${session.id}, course_id=${session.courseId}")
+            
+            // Check if session exists, then insert or update accordingly
+            val existing = try {
+                client.from("studysync_study_sessions")
+                    .select { filter { eq("id", session.id) } }
+                    .decodeSingleOrNull<SupabaseStudySession>()
+            } catch (e: Exception) {
+                null
             }
+            
+            if (existing != null) {
+                client.from("studysync_study_sessions").update(supabaseSession) {
+                    filter { eq("id", session.id) }
+                }
+                android.util.Log.d("SupabaseSyncService", "Study session updated: id=${session.id}")
+            } else {
+                client.from("studysync_study_sessions").insert(supabaseSession)
+                android.util.Log.d("SupabaseSyncService", "Study session inserted: id=${session.id}")
+            }
+            
+            android.util.Log.d("SupabaseSyncService", "Study session synced successfully: id=${session.id}")
+        } catch (e: Exception) {
+            android.util.Log.e("SupabaseSyncService", "Failed to sync study session ${session.id}", e)
+            android.util.Log.e("SupabaseSyncService", "Error message: ${e.message}")
+            e.printStackTrace()
+            throw e
         }
     }
     

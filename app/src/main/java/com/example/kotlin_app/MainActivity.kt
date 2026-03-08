@@ -1,11 +1,21 @@
 package com.example.kotlin_app
 
 import android.os.Bundle
+import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.work.Constraints
+import androidx.work.ExistingPeriodicWorkPolicy
+import androidx.work.NetworkType
+import androidx.work.PeriodicWorkRequestBuilder
+import androidx.work.WorkManager
+import com.example.kotlin_app.data.SyncWorker
+import java.util.concurrent.TimeUnit
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -13,12 +23,15 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -31,6 +44,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -45,6 +59,8 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -71,11 +87,41 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+
+        // Schedule periodic background sync with WorkManager
+        schedulePeriodicSync()
+
         setContent {
             Kotlin_AppTheme {
                 StudySyncApp()
             }
         }
+    }
+
+    /**
+     * Schedules a periodic WorkManager task to sync Room data to Supabase
+     * in the background every 15 minutes (minimum interval allowed).
+     * Only runs when the device has a network connection.
+     */
+    private fun schedulePeriodicSync() {
+        val constraints = Constraints.Builder()
+            .setRequiredNetworkType(NetworkType.CONNECTED)
+            .build()
+
+        val syncRequest = PeriodicWorkRequestBuilder<SyncWorker>(
+            15, TimeUnit.MINUTES
+        )
+            .setConstraints(constraints)
+            .addTag(SyncWorker.TAG)
+            .build()
+
+        WorkManager.getInstance(applicationContext).enqueueUniquePeriodicWork(
+            SyncWorker.WORK_NAME,
+            ExistingPeriodicWorkPolicy.KEEP,
+            syncRequest
+        )
+
+        Log.d("MainActivity", "Periodic Supabase sync scheduled via WorkManager")
     }
 }
 
@@ -188,6 +234,35 @@ fun CourseListScreen(
     val (newCourseName, setNewCourseName) = remember { mutableStateOf("") }
     val (newCourseColor, setNewCourseColor) = remember { mutableStateOf("#2196F3") }
 
+    // State for delete confirmation dialog
+    var courseToDelete by remember { mutableStateOf<Course?>(null) }
+
+    // Delete confirmation dialog
+    courseToDelete?.let { course ->
+        AlertDialog(
+            onDismissRequest = { courseToDelete = null },
+            title = { Text("Delete Course") },
+            text = {
+                Text("Are you sure you want to delete \"${course.name}\"? This will also delete all tasks and study sessions for this course.")
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        viewModel.deleteCourse(course)
+                        courseToDelete = null
+                    }
+                ) {
+                    Text("Delete", color = MaterialTheme.colorScheme.error)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { courseToDelete = null }) {
+                    Text("Cancel")
+                }
+            }
+        )
+    }
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -227,7 +302,7 @@ fun CourseListScreen(
 
         if (uiState.courses.isEmpty()) {
             Text(
-                text = "No courses yet. You’ll add creation UI next.",
+                text = "No courses yet.",
                 style = MaterialTheme.typography.bodyMedium
             )
         } else {
@@ -240,7 +315,8 @@ fun CourseListScreen(
                 items(uiState.courses, key = Course::id) { course ->
                     CourseRow(
                         course = course,
-                        onClick = { onCourseSelected(course.id.toString()) }
+                        onClick = { onCourseSelected(course.id.toString()) },
+                        onDelete = { courseToDelete = course }
                     )
                 }
             }
@@ -256,7 +332,8 @@ fun CourseListScreen(
 @Composable
 private fun CourseRow(
     course: Course,
-    onClick: () -> Unit
+    onClick: () -> Unit,
+    onDelete: () -> Unit
 ) {
     Card(
         modifier = Modifier
@@ -264,19 +341,38 @@ private fun CourseRow(
             .clickable(onClick = onClick),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
-        Column(
+        Row(
             modifier = Modifier
-            .padding(16.dp)
+                .fillMaxWidth()
+                .padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            Text(
-                text = course.name,
-                style = MaterialTheme.typography.titleMedium
+            // Color indicator circle
+            val courseColor = try {
+                Color(android.graphics.Color.parseColor(course.colorHex))
+            } catch (e: Exception) {
+                MaterialTheme.colorScheme.primary
+            }
+            Box(
+                modifier = Modifier
+                    .size(16.dp)
+                    .clip(CircleShape)
+                    .background(courseColor)
             )
-            Spacer(modifier = Modifier.height(4.dp))
-            Text(
-                text = "Color: ${course.colorHex}",
-                style = MaterialTheme.typography.bodySmall
-            )
+            Spacer(modifier = Modifier.width(12.dp))
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = course.name,
+                    style = MaterialTheme.typography.titleMedium
+                )
+            }
+            IconButton(onClick = onDelete) {
+                Icon(
+                    Icons.Default.Delete,
+                    contentDescription = "Delete Course",
+                    tint = MaterialTheme.colorScheme.error
+                )
+            }
         }
     }
 }

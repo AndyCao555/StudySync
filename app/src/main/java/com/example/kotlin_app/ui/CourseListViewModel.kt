@@ -38,6 +38,12 @@ class CourseListViewModel(
         }
     }
 
+    fun deleteCourse(course: Course) {
+        viewModelScope.launch {
+            repository.deleteCourse(course)
+        }
+    }
+
     private fun observeCourses() {
         viewModelScope.launch {
             repository.getAllCourses().collectLatest { courses ->
