@@ -23,8 +23,7 @@ class StudySessionRepository(
     suspend fun upsertSession(session: StudySession): Long {
         val id = studySessionDao.upsertSession(session)
         val updatedSession = session.copy(id = id)
-        
-        // Sync to Supabase
+
         supabaseSync?.let {
             try {
                 it.syncStudySessionToSupabase(updatedSession)
@@ -32,14 +31,13 @@ class StudySessionRepository(
                 Log.e("StudySessionRepository", "Supabase sync failed", e)
             }
         }
-        
+
         return id
     }
 
     suspend fun deleteSession(session: StudySession) {
         studySessionDao.deleteSession(session)
-        
-        // Delete from Supabase
+
         supabaseSync?.let {
             try {
                 it.deleteStudySessionFromSupabase(session.id)
@@ -49,4 +47,3 @@ class StudySessionRepository(
         }
     }
 }
-

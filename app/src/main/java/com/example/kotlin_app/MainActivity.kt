@@ -87,8 +87,6 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
-
-        // Schedule periodic background sync with WorkManager
         schedulePeriodicSync()
 
         setContent {
@@ -98,11 +96,6 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    /**
-     * Schedules a periodic WorkManager task to sync Room data to Supabase
-     * in the background every 15 minutes (minimum interval allowed).
-     * Only runs when the device has a network connection.
-     */
     private fun schedulePeriodicSync() {
         val constraints = Constraints.Builder()
             .setRequiredNetworkType(NetworkType.CONNECTED)
@@ -121,7 +114,7 @@ class MainActivity : ComponentActivity() {
             syncRequest
         )
 
-        Log.d("MainActivity", "Periodic Supabase sync scheduled via WorkManager")
+        Log.d("MainActivity", "Periodic Supabase sync scheduled")
     }
 }
 
@@ -209,18 +202,12 @@ fun StudySyncAppPreview() {
     }
 }
 
-
-/**
- * Course list screen backed by Room + ViewModel.
- */
 @Composable
 fun CourseListScreen(
     onBack: () -> Unit,
     onCourseSelected: (courseId: String) -> Unit
 ) {
     val context = LocalContext.current
-
-    // Simple manual wiring of the database, repository, and ViewModel.
     val database = StudySyncDatabase.getInstance(context)
     val supabaseSync = SupabaseSyncService()
     val repository = CourseRepository(database.courseDao(), supabaseSync)
@@ -234,10 +221,8 @@ fun CourseListScreen(
     val (newCourseName, setNewCourseName) = remember { mutableStateOf("") }
     val (newCourseColor, setNewCourseColor) = remember { mutableStateOf("#2196F3") }
 
-    // State for delete confirmation dialog
     var courseToDelete by remember { mutableStateOf<Course?>(null) }
 
-    // Delete confirmation dialog
     courseToDelete?.let { course ->
         AlertDialog(
             onDismissRequest = { courseToDelete = null },
@@ -347,7 +332,6 @@ private fun CourseRow(
                 .padding(16.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Color indicator circle
             val courseColor = try {
                 Color(android.graphics.Color.parseColor(course.colorHex))
             } catch (e: Exception) {
@@ -377,9 +361,6 @@ private fun CourseRow(
     }
 }
 
-/**
- * Task list screen with filtering and task management.
- */
 @Composable
 fun TaskListScreen(
     courseId: String,
@@ -390,7 +371,6 @@ fun TaskListScreen(
     onTaskSelected: (taskId: String) -> Unit
 ) {
     if (courseIdLong == 0L) {
-        // Invalid courseId - show error and back button
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -414,7 +394,6 @@ fun TaskListScreen(
 
     val uiState by viewModel.uiState.collectAsState()
     
-    // Compute filtered tasks reactively (no remember needed - computed on each recomposition)
     val filteredTasks = when (uiState.filter) {
         TaskFilter.ALL -> uiState.tasks
         TaskFilter.COMPLETED -> uiState.tasks.filter { it.isCompleted }
@@ -440,7 +419,6 @@ fun TaskListScreen(
             )
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Filter chips
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -514,7 +492,6 @@ private fun TaskRow(
                 .padding(16.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Checkbox with proper click handling
             Checkbox(
                 checked = task.isCompleted,
                 onCheckedChange = { 
@@ -554,7 +531,6 @@ private fun TaskRow(
                     )
                 }
             }
-            // Delete button with proper click handling
             IconButton(
                 onClick = onDelete,
                 modifier = Modifier
@@ -565,9 +541,6 @@ private fun TaskRow(
     }
 }
 
-/**
- * Task edit screen for adding or editing tasks.
- */
 @Composable
 fun TaskEditScreen(
     courseId: String,
@@ -586,10 +559,8 @@ fun TaskEditScreen(
     var priority by remember { mutableStateOf("3") }
     var isCompleted by remember { mutableStateOf(false) }
 
-    // Input/output formatter for the date field: DD-MM-YYYY
     val dateInputFormatter = DateTimeFormatter.ofPattern("dd-MM-yyyy")
 
-    // Load existing task if editing
     LaunchedEffect(taskId) {
         taskId?.toLongOrNull()?.let { id ->
             try {
@@ -602,7 +573,7 @@ fun TaskEditScreen(
                     isCompleted = it.isCompleted
                 }
             } catch (e: Exception) {
-                // Task not found or error loading - stay with empty form
+                // Task not found, stay with empty form
             }
         }
     }
@@ -639,7 +610,6 @@ fun TaskEditScreen(
         OutlinedTextField(
             value = dueDateText,
             onValueChange = { newValue ->
-                // Only allow numbers and dashes
                 if (newValue.all { it.isDigit() || it == '-' }) {
                     dueDateText = newValue
                 }
@@ -656,7 +626,6 @@ fun TaskEditScreen(
         OutlinedTextField(
             value = priority,
             onValueChange = { newValue ->
-                // Only allow numbers, and limit to single digit (1-5)
                 if (newValue.all { it.isDigit() } && newValue.length <= 1) {
                     val num = newValue.toIntOrNull()
                     if (num == null || (num in 1..5)) {
@@ -725,4 +694,3 @@ fun TaskEditScreen(
         }
     }
 }
-

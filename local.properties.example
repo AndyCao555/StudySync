@@ -1,10 +1,6 @@
-# Supabase Configuration
-# Copy this file to local.properties and fill in your actual values
-# local.properties is already in .gitignore and will NOT be committed to git
+# Copy this file to local.properties and fill in your values.
+# local.properties is in .gitignore and will not be committed.
 
-# Get these from Supabase Dashboard → Settings → API
-# Project URL (format: https://xxxxx.supabase.co)
+# Get these from Supabase Dashboard > Settings > API
 SUPABASE_URL=https://your-project-id.supabase.co
-
-# Anon/Public key (safe for client-side use)
 SUPABASE_ANON_KEY=your-anon-key-here

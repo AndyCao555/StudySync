@@ -71,7 +71,6 @@ fun DashboardScreen(
 
         Spacer(modifier = Modifier.height(20.dp))
 
-        // Stats grid — 2 columns × 2 rows
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(12.dp)
@@ -108,7 +107,6 @@ fun DashboardScreen(
 
         Spacer(modifier = Modifier.height(24.dp))
 
-        // Upcoming deadlines section
         Text(
             text = "Upcoming Deadlines",
             style = MaterialTheme.typography.titleMedium,
@@ -141,7 +139,6 @@ fun DashboardScreen(
 
         Spacer(modifier = Modifier.height(24.dp))
 
-        // Navigation
         Text(
             text = "Navigate",
             style = MaterialTheme.typography.titleMedium,

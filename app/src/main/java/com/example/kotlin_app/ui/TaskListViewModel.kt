@@ -28,8 +28,7 @@ class TaskListViewModel(
 ) : ViewModel() {
 
     private val _filter = MutableStateFlow(TaskFilter.ALL)
-    
-    // Convert Flow to StateFlow immediately for instant updates
+
     val tasks: StateFlow<List<Task>> = repository.getTasksForCourse(courseId)
         .stateIn(
             scope = viewModelScope,
@@ -55,7 +54,7 @@ class TaskListViewModel(
     fun toggleTaskCompletion(task: Task) {
         viewModelScope.launch {
             val updatedTask = task.copy(
-                id = task.id, // Ensure ID is preserved
+                id = task.id,
                 isCompleted = !task.isCompleted
             )
             repository.upsertTask(updatedTask)
@@ -81,4 +80,3 @@ class TaskListViewModelFactory(
         throw IllegalArgumentException("Unknown ViewModel class: ${'$'}modelClass")
     }
 }
-

@@ -6,13 +6,6 @@ import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
 import kotlinx.coroutines.flow.first
 
-/**
- * Background worker that periodically syncs local Room data to Supabase.
- *
- * Runs via WorkManager even when the app is not in the foreground,
- * ensuring cloud data stays up-to-date. Uses CoroutineWorker for
- * structured concurrency with Kotlin coroutines.
- */
 class SyncWorker(
     appContext: Context,
     workerParams: WorkerParameters
@@ -24,21 +17,18 @@ class SyncWorker(
     }
 
     override suspend fun doWork(): Result {
-        Log.d(TAG, "Starting periodic Supabase sync...")
+        Log.d(TAG, "Starting periodic Supabase sync")
 
         return try {
             val database = StudySyncDatabase.getInstance(applicationContext)
             val supabaseSync = SupabaseSyncService()
 
-            // Check if Supabase client is available
             if (SupabaseClient.client == null) {
-                Log.w(TAG, "Supabase client not configured — skipping sync")
+                Log.w(TAG, "Supabase client not configured, skipping sync")
                 return Result.success()
             }
 
-            // 1. Sync all courses
             val courses = database.courseDao().getAllCourses().first()
-            Log.d(TAG, "Syncing ${courses.size} courses...")
             for (course in courses) {
                 try {
                     supabaseSync.syncCourseToSupabase(course)
@@ -47,9 +37,7 @@ class SyncWorker(
                 }
             }
 
-            // 2. Sync all tasks
             val tasks = database.taskDao().getAllTasks().first()
-            Log.d(TAG, "Syncing ${tasks.size} tasks...")
             for (task in tasks) {
                 try {
                     supabaseSync.syncTaskToSupabase(task)
@@ -58,9 +46,7 @@ class SyncWorker(
                 }
             }
 
-            // 3. Sync all study sessions
             val sessions = database.studySessionDao().getAllSessions().first()
-            Log.d(TAG, "Syncing ${sessions.size} study sessions...")
             for (session in sessions) {
                 try {
                     supabaseSync.syncStudySessionToSupabase(session)
@@ -69,11 +55,10 @@ class SyncWorker(
                 }
             }
 
-            Log.d(TAG, "Periodic sync completed successfully")
+            Log.d(TAG, "Periodic sync completed")
             Result.success()
         } catch (e: Exception) {
             Log.e(TAG, "Periodic sync failed", e)
-            // Retry on failure — WorkManager will respect backoff policy
             Result.retry()
         }
     }

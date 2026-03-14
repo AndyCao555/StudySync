@@ -14,28 +14,21 @@ import kotlinx.serialization.json.JsonArray
 import java.time.Instant
 import java.util.UUID
 
-/**
- * Service to sync data between Room (local) and Supabase (cloud).
- * Uses separate tables from flask-app: studysync_courses, studysync_tasks, studysync_study_sessions
- */
 class SupabaseSyncService {
     private val client = SupabaseClient.client
-    
-    // ========== Courses ==========
-    
+
     suspend fun syncCourseToSupabase(course: Course) {
-        val client = this.client ?: return // Skip if Supabase not available
-        
+        val client = this.client ?: return
+
         try {
             val supabaseCourse = SupabaseCourse(
                 id = course.id,
                 name = course.name,
                 color_hex = course.colorHex
             )
-            
+
             android.util.Log.d("SupabaseSyncService", "Syncing course: id=${course.id}, name=${course.name}")
-            
-            // Check if course exists, then insert or update accordingly
+
             val existing = try {
                 client.from("studysync_courses")
                     .select { filter { eq("id", course.id) } }
@@ -43,28 +36,22 @@ class SupabaseSyncService {
             } catch (e: Exception) {
                 null
             }
-            
+
             if (existing != null) {
-                // Update existing
                 client.from("studysync_courses").update(supabaseCourse) {
                     filter { eq("id", course.id) }
                 }
-                android.util.Log.d("SupabaseSyncService", "Course updated: id=${course.id}")
             } else {
-                // Insert new
                 client.from("studysync_courses").insert(supabaseCourse)
-                android.util.Log.d("SupabaseSyncService", "Course inserted: id=${course.id}")
             }
-            
-            android.util.Log.d("SupabaseSyncService", "Course synced successfully: id=${course.id}")
+
+            android.util.Log.d("SupabaseSyncService", "Course synced: id=${course.id}")
         } catch (e: Exception) {
-            android.util.Log.e("SupabaseSyncService", "Failed to sync course ${course.id} (${course.name})", e)
-            android.util.Log.e("SupabaseSyncService", "Error message: ${e.message}")
-            e.printStackTrace()
-            throw e // Re-throw to be caught by repository
+            android.util.Log.e("SupabaseSyncService", "Failed to sync course ${course.id}", e)
+            throw e
         }
     }
-    
+
     suspend fun getAllCoursesFromSupabase(): List<Course> {
         val client = this.client ?: return emptyList()
         return try {
@@ -76,22 +63,20 @@ class SupabaseSyncService {
             emptyList()
         }
     }
-    
+
     suspend fun deleteCourseFromSupabase(courseId: Long) {
         val client = this.client ?: return
         client.from("studysync_courses").delete {
             filter { eq("id", courseId) }
         }
     }
-    
-    // ========== Tasks ==========
-    
+
     suspend fun syncTaskToSupabase(task: Task) {
         val client = this.client ?: run {
-            android.util.Log.w("SupabaseSyncService", "Supabase client is null - sync skipped for task: ${task.title}")
+            android.util.Log.w("SupabaseSyncService", "Supabase client is null, skipping sync for task: ${task.title}")
             return
         }
-        
+
         try {
             val supabaseTask = SupabaseTask(
                 id = task.id,
@@ -102,10 +87,9 @@ class SupabaseSyncService {
                 priority = task.priority,
                 is_completed = task.isCompleted
             )
-            
-            android.util.Log.d("SupabaseSyncService", "Syncing task: id=${task.id}, title=${task.title}, course_id=${task.courseId}")
-            
-            // Check if task exists, then insert or update accordingly
+
+            android.util.Log.d("SupabaseSyncService", "Syncing task: id=${task.id}, title=${task.title}")
+
             val existing = try {
                 client.from("studysync_tasks")
                     .select { filter { eq("id", task.id) } }
@@ -113,28 +97,22 @@ class SupabaseSyncService {
             } catch (e: Exception) {
                 null
             }
-            
+
             if (existing != null) {
-                // Update existing
                 client.from("studysync_tasks").update(supabaseTask) {
                     filter { eq("id", task.id) }
                 }
-                android.util.Log.d("SupabaseSyncService", "Task updated: id=${task.id}")
             } else {
-                // Insert new
                 client.from("studysync_tasks").insert(supabaseTask)
-                android.util.Log.d("SupabaseSyncService", "Task inserted: id=${task.id}")
             }
-            
-            android.util.Log.d("SupabaseSyncService", "Task synced successfully: id=${task.id}")
+
+            android.util.Log.d("SupabaseSyncService", "Task synced: id=${task.id}")
         } catch (e: Exception) {
-            android.util.Log.e("SupabaseSyncService", "Failed to sync task ${task.id} (${task.title})", e)
-            android.util.Log.e("SupabaseSyncService", "Error message: ${e.message}")
-            e.printStackTrace()
-            throw e // Re-throw to be caught by repository
+            android.util.Log.e("SupabaseSyncService", "Failed to sync task ${task.id}", e)
+            throw e
         }
     }
-    
+
     suspend fun getTasksForCourseFromSupabase(courseId: Long): List<Task> {
         val client = this.client ?: return emptyList()
         return try {
@@ -148,35 +126,30 @@ class SupabaseSyncService {
             emptyList()
         }
     }
-    
+
     suspend fun deleteTaskFromSupabase(taskId: Long) {
         val client = this.client ?: run {
-            android.util.Log.w("SupabaseSyncService", "Supabase client is null - delete skipped for task: $taskId")
+            android.util.Log.w("SupabaseSyncService", "Supabase client is null, skipping delete for task: $taskId")
             return
         }
-        
+
         try {
-            android.util.Log.d("SupabaseSyncService", "Deleting task from Supabase: id=$taskId")
             client.from("studysync_tasks").delete {
                 filter { eq("id", taskId) }
             }
-            android.util.Log.d("SupabaseSyncService", "Task deleted successfully from Supabase: id=$taskId")
+            android.util.Log.d("SupabaseSyncService", "Task deleted: id=$taskId")
         } catch (e: Exception) {
-            android.util.Log.e("SupabaseSyncService", "Failed to delete task $taskId from Supabase", e)
-            android.util.Log.e("SupabaseSyncService", "Error message: ${e.message}")
-            e.printStackTrace()
-            throw e // Re-throw to be caught by repository
+            android.util.Log.e("SupabaseSyncService", "Failed to delete task $taskId", e)
+            throw e
         }
     }
-    
-    // ========== Study Sessions ==========
-    
+
     suspend fun syncStudySessionToSupabase(session: StudySession) {
         val client = this.client ?: run {
-            android.util.Log.w("SupabaseSyncService", "Supabase client is null - sync skipped for session: ${session.id}")
+            android.util.Log.w("SupabaseSyncService", "Supabase client is null, skipping sync for session: ${session.id}")
             return
         }
-        
+
         try {
             val supabaseSession = SupabaseStudySession(
                 id = session.id,
@@ -184,10 +157,9 @@ class SupabaseSyncService {
                 date = session.date.toString(),
                 duration_minutes = session.durationMinutes
             )
-            
-            android.util.Log.d("SupabaseSyncService", "Syncing study session: id=${session.id}, course_id=${session.courseId}")
-            
-            // Check if session exists, then insert or update accordingly
+
+            android.util.Log.d("SupabaseSyncService", "Syncing study session: id=${session.id}")
+
             val existing = try {
                 client.from("studysync_study_sessions")
                     .select { filter { eq("id", session.id) } }
@@ -195,26 +167,22 @@ class SupabaseSyncService {
             } catch (e: Exception) {
                 null
             }
-            
+
             if (existing != null) {
                 client.from("studysync_study_sessions").update(supabaseSession) {
                     filter { eq("id", session.id) }
                 }
-                android.util.Log.d("SupabaseSyncService", "Study session updated: id=${session.id}")
             } else {
                 client.from("studysync_study_sessions").insert(supabaseSession)
-                android.util.Log.d("SupabaseSyncService", "Study session inserted: id=${session.id}")
             }
-            
-            android.util.Log.d("SupabaseSyncService", "Study session synced successfully: id=${session.id}")
+
+            android.util.Log.d("SupabaseSyncService", "Study session synced: id=${session.id}")
         } catch (e: Exception) {
             android.util.Log.e("SupabaseSyncService", "Failed to sync study session ${session.id}", e)
-            android.util.Log.e("SupabaseSyncService", "Error message: ${e.message}")
-            e.printStackTrace()
             throw e
         }
     }
-    
+
     suspend fun getSessionsForCourseFromSupabase(courseId: Long): List<StudySession> {
         val client = this.client ?: return emptyList()
         return try {
@@ -228,20 +196,14 @@ class SupabaseSyncService {
             emptyList()
         }
     }
-    
+
     suspend fun deleteStudySessionFromSupabase(sessionId: Long) {
         val client = this.client ?: return
         client.from("studysync_study_sessions").delete {
             filter { eq("id", sessionId) }
         }
     }
-    
-    // ========== Create Snapshot for Collector Agent ==========
-    
-    /**
-     * Creates a snapshot document that the collector agent can read.
-     * Stores in studysync_snapshots table (separate from flask-app tables).
-     */
+
     suspend fun createSnapshotForCollector(
         courses: List<Course>,
         tasks: List<Task>,
@@ -251,7 +213,7 @@ class SupabaseSyncService {
     ) {
         val timestamp = Instant.now().toString()
         val snapshotId = "${timestamp}_${UUID.randomUUID().toString().take(8)}"
-        
+
         val payload = buildJsonObject {
             putJsonArray("courses") {
                 courses.forEach { course ->
@@ -306,9 +268,9 @@ class SupabaseSyncService {
                 put("total_study_hours", studySessions.sumOf { it.durationMinutes } / 60.0)
             })
         }
-        
+
         val client = this.client ?: return
-        
+
         val snapshot = SupabaseSnapshot(
             id = snapshotId,
             timestamp = timestamp,
@@ -319,10 +281,10 @@ class SupabaseSyncService {
             ),
             payload = payload
         )
-        
+
         client.from("studysync_snapshots").insert(snapshot)
     }
-    
+
     private fun courseToMap(course: Course): Map<String, Any> {
         return mapOf(
             "id" to course.id,
@@ -330,7 +292,7 @@ class SupabaseSyncService {
             "color_hex" to course.colorHex
         )
     }
-    
+
     private fun taskToMap(task: Task): Map<String, Any> {
         return mapOf(
             "id" to task.id,
@@ -342,7 +304,7 @@ class SupabaseSyncService {
             "is_completed" to task.isCompleted
         )
     }
-    
+
     private fun sessionToMap(session: StudySession): Map<String, Any> {
         return mapOf(
             "id" to session.id,
@@ -351,10 +313,7 @@ class SupabaseSyncService {
             "duration_minutes" to session.durationMinutes
         )
     }
-    
 }
-
-// ========== Data Classes for Supabase ==========
 
 @Serializable
 data class SupabaseCourse(

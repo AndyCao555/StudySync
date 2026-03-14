@@ -20,52 +20,33 @@ android {
         versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
-        
-        // Load Supabase credentials from local.properties
-        // Read file manually since Properties.load() seems to have issues
+
         val localPropertiesFile = rootProject.file("local.properties")
         var supabaseUrl = "https://your-project-id.supabase.co"
         var supabaseAnonKey = ""
-        
+
         if (localPropertiesFile.exists()) {
-            println("✅ Reading local.properties from: ${localPropertiesFile.absolutePath}")
             try {
                 val lines = localPropertiesFile.readLines()
-                println("   Total lines in file: ${lines.size}")
-                lines.forEachIndexed { index, line ->
+                lines.forEach { line ->
                     val trimmed = line.trim()
-                    println("   Line ${index + 1}: '$trimmed'")
-                    // Skip comments and empty lines
                     if (!trimmed.startsWith("#") && trimmed.contains("=")) {
                         val parts = trimmed.split("=", limit = 2)
                         if (parts.size == 2) {
                             val key = parts[0].trim()
                             val value = parts[1].trim()
-                            println("   Parsed: key='$key', value='${value.take(30)}...'")
                             when (key) {
-                                "SUPABASE_URL" -> {
-                                    supabaseUrl = value
-                                    println("   ✅ Found SUPABASE_URL: $value")
-                                }
-                                "SUPABASE_ANON_KEY" -> {
-                                    supabaseAnonKey = value
-                                    println("   ✅ Found SUPABASE_ANON_KEY (length: ${value.length})")
-                                }
+                                "SUPABASE_URL" -> supabaseUrl = value
+                                "SUPABASE_ANON_KEY" -> supabaseAnonKey = value
                             }
                         }
                     }
                 }
             } catch (e: Exception) {
-                println("⚠️ Error reading local.properties: ${e.message}")
-                e.printStackTrace()
+                println("Error reading local.properties: ${e.message}")
             }
-        } else {
-            println("⚠️ local.properties not found at: ${rootProject.file("local.properties").absolutePath}")
         }
-        
-        println("📝 Final Supabase URL: $supabaseUrl")
-        println("📝 Final Supabase Key length: ${supabaseAnonKey.length}")
-        
+
         buildConfigField("String", "SUPABASE_URL", "\"$supabaseUrl\"")
         buildConfigField("String", "SUPABASE_ANON_KEY", "\"$supabaseAnonKey\"")
     }
@@ -107,18 +88,15 @@ dependencies {
     implementation(libs.androidx.room.runtime)
     implementation(libs.androidx.room.ktx)
     ksp(libs.androidx.room.compiler)
-    
-    // WorkManager for background sync
+
     implementation(libs.androidx.work.runtime.ktx)
-    
-    // Supabase
+
     implementation(platform(libs.supabase.bom))
     implementation(libs.supabase.postgrest)
     implementation(libs.supabase.realtime)
     implementation(libs.kotlinx.serialization.json)
-    // Ktor Android client engine (required for Supabase HTTP client)
     implementation("io.ktor:ktor-client-android:2.3.12")
-    
+
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
